@@ -1,0 +1,7 @@
+node_modules/
+npm-debug.log
+.DS_Store
+*.log
+prometheus_data/
+alertmanager_data/
+grafana_data/

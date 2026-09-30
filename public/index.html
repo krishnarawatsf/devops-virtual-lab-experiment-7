@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLE-7: Full DevOps Monitoring System (AWS + K8s + CI/CD + Alerts)</title>
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="logo-icon"><i data-lucide="activity"></i></div>
+      <div class="brand-text">
+        <span class="brand-title">DevOps Command Center</span>
+        <span class="brand-badge">VLE-7 Production Lab</span>
+      </div>
+    </div>
+    <div class="nav-status-group">
+      <div class="status-pill status-online">
+        <span class="pulsing-dot"></span>
+        <span>AWS EC2: t2.medium (us-east-1)</span>
+      </div>
+      <div class="status-pill status-k8s">
+        <i data-lucide="box" class="k8s-icon"></i>
+        <span>K8s: 2 Pods Active</span>
+      </div>
+      <div class="status-pill status-prometheus">
+        <i data-lucide="flame" class="prom-icon"></i>
+        <span>Prometheus: Scraping (15s)</span>
+      </div>
+      <a href="/metrics" target="_blank" class="btn-metrics" id="btnMetricsLink">
+        <i data-lucide="file-code"></i> /metrics
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Container -->
+  <main class="dashboard-container">
+
+    <!-- Hero Experiment Banner -->
+    <section class="experiment-hero">
+      <div class="hero-content">
+        <div class="hero-tags">
+          <span class="badge badge-accent">Virtual Lab Experiment 7</span>
+          <span class="badge badge-outline">AWS Cloud • Kubernetes • Jenkins • Prometheus • Grafana • Alertmanager</span>
+        </div>
+        <h1>Full DevOps Monitoring System</h1>
+        <p>End-to-End continuous integration, container orchestration, real-time time-series telemetry scraping, golden signal visualization, and automated alert routing.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="btnRunPipeline">
+          <i data-lucide="play-circle"></i> Trigger Jenkins CI/CD Pipeline
+        </button>
+        <button class="btn btn-secondary" id="btnGenerateTraffic">
+          <i data-lucide="zap"></i> Generate Traffic (100 req)
+        </button>
+      </div>
+    </section>
+
+    <!-- Top KPI Stat Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">CPU Utilization</span>
+          <i data-lucide="cpu" class="kpi-icon icon-blue"></i>
+        </div>
+        <div class="kpi-value-wrap">
+          <span class="kpi-value" id="kpiCpu">24.5%</span>
+          <span class="kpi-subtext" id="kpiCpuSub">Baseline nominal</span>
+        </div>
+        <div class="kpi-bar-bg"><div class="kpi-bar-fill" id="barCpu" style="width: 25%;"></div></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">HTTP Throughput</span>
+          <i data-lucide="arrow-up-right" class="kpi-icon icon-green"></i>
+        </div>
+        <div class="kpi-value-wrap">
+          <span class="kpi-value" id="kpiRps">52 req/s</span>
+          <span class="kpi-subtext">Golden Signal: Traffic</span>
+        </div>
+        <div class="kpi-bar-bg"><div class="kpi-bar-fill bg-green" style="width: 52%;"></div></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">P95 Latency</span>
+          <i data-lucide="clock" class="kpi-icon icon-amber"></i>
+        </div>
+        <div class="kpi-value-wrap">
+          <span class="kpi-value" id="kpiLatency">22 ms</span>
+          <span class="kpi-subtext">Golden Signal: Latency</span>
+        </div>
+        <div class="kpi-bar-bg"><div class="kpi-bar-fill bg-amber" id="barLatency" style="width: 12%;"></div></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">5xx Error Rate</span>
+          <i data-lucide="alert-triangle" class="kpi-icon icon-red"></i>
+        </div>
+        <div class="kpi-value-wrap">
+          <span class="kpi-value" id="kpiErrorRate">0.0%</span>
+          <span class="kpi-subtext" id="kpiErrorSub">SLO: 99.9% Success</span>
+        </div>
+        <div class="kpi-bar-bg"><div class="kpi-bar-fill bg-red" id="barError" style="width: 0%;"></div></div>
+      </div>
+    </section>
+
+    <!-- Interactive Navigation Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="tab-overview">
+        <i data-lucide="layout-dashboard"></i> Live Monitoring & Telemetry
+      </button>
+      <button class="tab-btn" data-tab="tab-pipeline">
+        <i data-lucide="git-merge"></i> Jenkins CI/CD Pipeline
+      </button>
+      <button class="tab-btn" data-tab="tab-alerts">
+        <i data-lucide="bell-ring"></i> Alertmanager & Chaos Lab
+      </button>
+      <button class="tab-btn" data-tab="tab-k8s">
+        <i data-lucide="layers"></i> Kubernetes & AWS Topology
+      </button>
+      <button class="tab-btn" data-tab="tab-viva">
+        <i data-lucide="graduation-cap"></i> Viva Voce & Lab Guide
+      </button>
+    </nav>
+
+    <!-- TAB 1: Live Monitoring & Grafana Telemetry -->
+    <section class="tab-pane active" id="tab-overview">
+      <div class="charts-grid">
+        <div class="glass-card chart-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="line-chart" class="header-icon"></i>
+              <h3>Pod Resource Metrics (CPU & Memory)</h3>
+            </div>
+            <span class="metric-tag">PromQL: pod_cpu_usage_percent</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="resourceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="activity" class="header-icon icon-green"></i>
+              <h3>HTTP Traffic & Request Latency (ms)</h3>
+            </div>
+            <span class="metric-tag">PromQL: http_requests_total</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="trafficChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Log Stream & Raw Metrics Preview -->
+      <div class="dual-card-grid">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="terminal" class="header-icon"></i>
+              <h3>Prometheus Scrape Telemetry Stream</h3>
+            </div>
+            <button class="btn-sm" id="btnClearLogs">Clear</button>
+          </div>
+          <div class="terminal-view" id="telemetryLogBox">
+            <div class="log-line log-info">[00:00:01] Prometheus Scrape Engine initialized on port 9090</div>
+            <div class="log-line log-success">[00:00:02] Target discovered: job="myapp-kubernetes", pods=2, interval=15s</div>
+            <div class="log-line log-info">[00:00:05] Evaluation loop: 5 alert rules evaluated successfully (0 firing)</div>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="code" class="header-icon"></i>
+              <h3>Raw Prometheus Metrics Scrape Sample</h3>
+            </div>
+            <button class="btn-sm" id="btnRefreshMetrics">Refresh</button>
+          </div>
+          <pre class="code-preview" id="rawMetricsBox">Fetching /metrics...</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Jenkins CI/CD Pipeline -->
+    <section class="tab-pane" id="tab-pipeline">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="header-left">
+            <i data-lucide="git-pull-request" class="header-icon"></i>
+            <h3>Jenkins Declarative Pipeline: Full Deployment Lifecycle</h3>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnTriggerPipelineStage">
+            <i data-lucide="play"></i> Execute Build #14
+          </button>
+        </div>
+
+        <div class="pipeline-flow-container">
+          <div class="pipeline-step step-complete" id="step-checkout">
+            <div class="step-num">1</div>
+            <div class="step-details">
+              <h4>Git Checkout</h4>
+              <p>Branch: <code>main</code></p>
+              <span class="step-duration">1.2s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-lint">
+            <div class="step-num">2</div>
+            <div class="step-details">
+              <h4>Static Analysis</h4>
+              <p>Syntax & Linting</p>
+              <span class="step-duration">2.4s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-test">
+            <div class="step-num">3</div>
+            <div class="step-details">
+              <h4>Automated Tests</h4>
+              <p>9/9 Passed (100%)</p>
+              <span class="step-duration">3.1s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-docker">
+            <div class="step-num">4</div>
+            <div class="step-details">
+              <h4>Docker Build</h4>
+              <p>Tag: <code>v1.0.0</code></p>
+              <span class="step-duration">6.5s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-scan">
+            <div class="step-num">5</div>
+            <div class="step-details">
+              <h4>Security Audit</h4>
+              <p>0 Critical Vulns</p>
+              <span class="step-duration">2.0s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-k8s">
+            <div class="step-num">6</div>
+            <div class="step-details">
+              <h4>Deploy to K8s</h4>
+              <p>Rolling Update</p>
+              <span class="step-duration">4.8s</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow"><i data-lucide="chevron-right"></i></div>
+
+          <div class="pipeline-step step-complete" id="step-verify">
+            <div class="step-num">7</div>
+            <div class="step-details">
+              <h4>Scrape Verification</h4>
+              <p>Prometheus Scraped</p>
+              <span class="step-duration">1.8s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-console-box">
+          <div class="console-header">
+            <span><i data-lucide="terminal"></i> Jenkins Build Console Output</span>
+            <span class="badge badge-success">SUCCESS</span>
+          </div>
+          <div class="console-body" id="jenkinsConsoleOutput">
+Started by user Krishna Rawat
+[Pipeline] Start of Pipeline
+[Pipeline] stage: Checkout Source Code
+ > git rev-parse --is-inside-work-tree # timeout=10
+ > git checkout -f e94b2a8c
+[Pipeline] stage: Code Linting & Static Analysis
+[Pipeline] stage: Unit & Smoke Tests
+  npm test -> 9 test suites passed
+[Pipeline] stage: Docker Image Build & Tag
+  docker build -t krishnarawatsf/devops-monitoring-app:v1.0.0 .
+[Pipeline] stage: Deploy to Kubernetes Cluster
+  deployment.apps/myapp configured
+  service/myapp-service configured
+[Pipeline] stage: Prometheus & Monitoring Health Verification
+  Prometheus targets: 2/2 UP. Metrics endpoint verified.
+[Pipeline] End of Pipeline
+Finished: SUCCESS
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Alertmanager & Chaos Lab -->
+    <section class="tab-pane" id="tab-alerts">
+      <div class="chaos-grid">
+        <!-- Chaos Engineering Controls -->
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="flame" class="header-icon icon-red"></i>
+              <h3>Chaos Engineering & Alert Injection</h3>
+            </div>
+            <span class="badge badge-outline">Alertmanager Rule Tester</span>
+          </div>
+          <p class="section-desc">Inject live synthetic faults to verify Prometheus alert evaluation rules and Alertmanager routing:</p>
+
+          <div class="chaos-buttons-list">
+            <div class="chaos-item">
+              <div class="chaos-info">
+                <h4>1. Spike CPU Load (>85%)</h4>
+                <p>Triggers Alert: <code>HighCPUUsage</code> (Severity: Warning)</p>
+              </div>
+              <button class="btn btn-warning" id="btnChaosCpu">
+                <i data-lucide="zap"></i> Trigger CPU Spike
+              </button>
+            </div>
+
+            <div class="chaos-item">
+              <div class="chaos-info">
+                <h4>2. Inject 500 Server Errors</h4>
+                <p>Triggers Alert: <code>HighHttpErrorRate</code> (Severity: Critical)</p>
+              </div>
+              <button class="btn btn-danger" id="btnChaosErrors">
+                <i data-lucide="alert-octagon"></i> Inject 500 Errors
+              </button>
+            </div>
+
+            <div class="chaos-item">
+              <div class="chaos-info">
+                <h4>3. Pod Restart / CrashLoop</h4>
+                <p>Triggers Alert: <code>PodCrashLoop</code> (>3 restarts)</p>
+              </div>
+              <button class="btn btn-danger" id="btnChaosCrash">
+                <i data-lucide="refresh-cw"></i> Trigger CrashLoop
+              </button>
+            </div>
+
+            <div class="chaos-item">
+              <div class="chaos-info">
+                <h4>4. Reset Nominal State</h4>
+                <p>Restores healthy metrics and auto-resolves active alerts.</p>
+              </div>
+              <button class="btn btn-success" id="btnChaosReset">
+                <i data-lucide="check-circle-2"></i> Clear Chaos & Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertmanager Live Notification Feed -->
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i data-lucide="bell" class="header-icon icon-amber"></i>
+              <h3>Alertmanager Active Incident Feed</h3>
+            </div>
+            <span class="badge badge-accent" id="alertCountBadge">0 Firing</span>
+          </div>
+          
+          <div class="alert-feed-list" id="alertFeedList">
+            <div class="alert-empty-state" id="emptyAlertState">
+              <i data-lucide="shield-check" class="empty-icon"></i>
+              <h4>All Systems Nominal</h4>
+              <p>Prometheus rules evaluating every 15s. No firing alerts currently.</p>
+            </div>
+          </div>
+
+          <div class="alert-routing-info">
+            <div class="route-item">
+              <strong>Routing Tree:</strong> <code>critical → PagerDuty / Webhook</code> | <code>warning → #devops-slack</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Kubernetes & AWS Topology -->
+    <section class="tab-pane" id="tab-k8s">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="header-left">
+            <i data-lucide="network" class="header-icon"></i>
+            <h3>End-to-End DevOps Infrastructure Topology</h3>
+          </div>
+          <span class="badge badge-accent">AWS EC2 + Kubernetes + Monitoring Stack</span>
+        </div>
+
+        <div class="topology-container">
+          <!-- AWS EC2 Layer -->
+          <div class="topology-box box-aws">
+            <div class="box-title"><i data-lucide="cloud"></i> AWS EC2 (t2.medium - Ubuntu 22.04)</div>
+            <div class="topology-sub">
+              <span class="tag">IP: 54.198.24.112</span>
+              <span class="tag">Security Group Ports: 22, 8080, 9090, 3000, 9093</span>
+            </div>
+            
+            <div class="topology-inner-grid">
+              <!-- Jenkins Node -->
+              <div class="node-card">
+                <div class="node-head"><i data-lucide="server"></i> Jenkins CI/CD Engine</div>
+                <div class="node-meta">Port 8080 • Multibranch Pipeline</div>
+                <div class="node-status status-healthy">● Active</div>
+              </div>
+
+              <!-- Kubernetes Node -->
+              <div class="node-card card-k8s-node">
+                <div class="node-head"><i data-lucide="box"></i> Kubernetes Cluster (Minikube / EKS)</div>
+                <div class="node-meta">Namespace: <code>default</code> • HPA Target: 75% CPU</div>
+                <div class="pods-list">
+                  <div class="pod-chip"><i data-lucide="container"></i> myapp-7c6d489b4f-8m2qx (Healthy)</div>
+                  <div class="pod-chip"><i data-lucide="container"></i> myapp-7c6d489b4f-kw9zq (Healthy)</div>
+                </div>
+                <div class="node-status status-healthy">● NodePort: 30080</div>
+              </div>
+
+              <!-- Prometheus & Grafana Node -->
+              <div class="node-card">
+                <div class="node-head"><i data-lucide="pie-chart"></i> Monitoring & Alerting Suite</div>
+                <div class="node-meta">Prometheus (9090) • Grafana (3000) • Alertmanager (9093)</div>
+                <div class="node-status status-healthy">● Scraping & Visualizing</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Viva Voce & Lab Guide -->
+    <section class="tab-pane" id="tab-viva">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="header-left">
+            <i data-lucide="book-open" class="header-icon"></i>
+            <h3>VLE-7 Viva Voce Question Bank & Comprehensive Answers</h3>
+          </div>
+          <span class="badge badge-accent">DevOps & Observability</span>
+        </div>
+
+        <div class="viva-accordion">
+          <!-- Question 1 -->
+          <div class="viva-item">
+            <button class="viva-question">
+              <span>1. What is a CI/CD Pipeline and what is the difference between CI and CD?</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="viva-answer">
+              <p><strong>Continuous Integration (CI):</strong> The automated practice of frequently merging code changes into a central repository, triggering automated builds, lints, and unit tests to detect bugs early.</p>
+              <p><strong>Continuous Delivery (CD):</strong> Automatically prepares code changes for a release to production after passing all tests, requiring manual approval for the final deploy.</p>
+              <p><strong>Continuous Deployment (CD):</strong> Goes one step further by automatically deploying every valid build directly into production without manual intervention.</p>
+            </div>
+          </div>
+
+          <!-- Question 2 -->
+          <div class="viva-item">
+            <button class="viva-question">
+              <span>2. What is a Kubernetes Pod, and what is the difference between a Deployment and a Service?</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="viva-answer">
+              <p><strong>Pod:</strong> The smallest deployable computing unit in Kubernetes, encapsulating one or more tightly coupled containers sharing network IP, storage volumes, and lifecycle.</p>
+              <p><strong>Deployment:</strong> A declarative controller managing the desired state of Pods (replica count, rolling updates, rollbacks, and self-healing).</p>
+              <p><strong>Service:</strong> An abstraction layer defining a stable logical set of Pods and a policy to access them via stable IP and DNS (ClusterIP, NodePort, LoadBalancer).</p>
+            </div>
+          </div>
+
+          <!-- Question 3 -->
+          <div class="viva-item">
+            <button class="viva-question">
+              <span>3. How does Prometheus scrape metrics, and why is Grafana used alongside it?</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="viva-answer">
+              <p><strong>Prometheus Metric Scraping:</strong> Prometheus uses a pull-based architecture. It periodically queries configured HTTP <code>/metrics</code> endpoints over TCP, parsing time-series metrics (Counters, Gauges, Histograms) into its TSDB.</p>
+              <p><strong>Why Grafana?</strong> Prometheus provides basic ad-hoc graphing and TSDB storage, while Grafana is an enterprise visualization platform featuring dynamic dashboards, multi-datasource querying, variable templating, and rich alerting panels.</p>
+            </div>
+          </div>
+
+          <!-- Question 4 -->
+          <div class="viva-item">
+            <button class="viva-question">
+              <span>4. What is Prometheus Alertmanager and how do alert rules work?</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="viva-answer">
+              <p><strong>Alertmanager:</strong> Handles alerts generated by Prometheus server rules. It deduplicates, groups, and routes alerts to downstream channels (Slack, Email, PagerDuty, Webhook) with silencing and inhibition rules.</p>
+              <p><strong>Alert Rules:</strong> PromQL expressions configured in Prometheus (e.g., <code>pod_cpu_usage_percent > 85</code> for <code>1m</code>). When the condition is met for the duration of the <code>for</code> clause, Prometheus transitions the alert from <em>Pending</em> to <em>Firing</em> and pushes it to Alertmanager.</p>
+            </div>
+          </div>
+
+          <!-- Question 5 -->
+          <div class="viva-item">
+            <button class="viva-question">
+              <span>5. What are Google's Four Golden Signals of Monitoring?</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="viva-answer">
+              <p><strong>1. Latency:</strong> The time it takes to service a request (differentiating successful requests from errors).</p>
+              <p><strong>2. Traffic:</strong> A measure of how much demand is being placed on your system (e.g., HTTP requests per second).</p>
+              <p><strong>3. Errors:</strong> The rate of requests that fail (e.g., HTTP 500s or explicit system exceptions).</p>
+              <p><strong>4. Saturation:</strong> A measure of system fullness, emphasizing most constrained resources (CPU, Memory, Disk I/O).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <span>VLE-7: Full DevOps Monitoring System • Designed & Implemented by <strong>Krishna Rawat</strong></span>
+      <span class="footer-meta">AWS Cloud • Kubernetes • Jenkins • Prometheus • Grafana • Alertmanager</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

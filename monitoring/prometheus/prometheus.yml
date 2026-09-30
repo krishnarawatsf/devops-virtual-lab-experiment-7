@@ -1,0 +1,50 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    monitor: 'vle-7-k8s-monitor'
+    environment: 'production'
+    cloud_provider: 'aws'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - 'alertmanager:9093'
+      - 'localhost:9093'
+
+# Rule files containing recording and alerting rules
+rule_files:
+  - 'alert_rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'myapp-kubernetes'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['myapp:8080', 'host.docker.internal:8080', 'localhost:8080', 'localhost:8081']
+        labels:
+          app: 'myapp'
+          tier: 'backend'
+          env: 'production'
+          region: 'us-east-1'
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100', 'localhost:9100']
+        labels:
+          instance: 'aws-ec2-node-01'
+
+  - job_name: 'jenkins-ci'
+    metrics_path: '/prometheus/'
+    static_configs:
+      - targets: ['jenkins:8080', 'localhost:8080']
+        labels:
+          role: 'ci-cd-orchestrator'

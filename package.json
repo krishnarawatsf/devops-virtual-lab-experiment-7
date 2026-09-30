@@ -1,0 +1,31 @@
+{
+  "name": "devops-full-monitoring-system-vle7",
+  "version": "1.0.0",
+  "description": "VLE-7: Full DevOps Monitoring System integrating AWS EC2, Kubernetes, Jenkins CI/CD, Prometheus, Grafana, and Alertmanager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node tests/run_all_tests.js",
+    "verify": "bash scripts/verify_stack.sh"
+  },
+  "keywords": [
+    "devops",
+    "kubernetes",
+    "jenkins",
+    "prometheus",
+    "grafana",
+    "alertmanager",
+    "aws",
+    "monitoring",
+    "vle-7"
+  ],
+  "author": "Krishna Rawat",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "prom-client": "^15.1.3",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {}
+}

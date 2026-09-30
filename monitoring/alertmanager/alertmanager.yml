@@ -1,0 +1,58 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@devops-monitoring.internal'
+  smtp_auth_username: 'devops-alerts@internal.net'
+  smtp_auth_password: 'dummy-password'
+  slack_api_url: 'https://hooks.slack-example.internal/services/alert-channel'
+
+route:
+  group_by: ['alertname', 'cluster', 'service', 'severity']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+  receiver: 'default-webhook'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'devops-critical-pager'
+      continue: true
+    - match:
+        severity: warning
+      receiver: 'devops-slack-channel'
+    - match:
+        layer: kubernetes
+      receiver: 'k8s-admin-team'
+
+inhibit_rules:
+  - source_match:
+      alertname: 'NodeDown'
+    target_match:
+      alertname: 'PodCrashLoop'
+    equal: ['node', 'instance']
+
+receivers:
+  - name: 'default-webhook'
+    webhook_configs:
+      - url: 'http://localhost:8081/api/alerts/webhook'
+        send_resolved: true
+
+  - name: 'devops-critical-pager'
+    webhook_configs:
+      - url: 'http://localhost:8081/api/alerts/webhook'
+        send_resolved: true
+    slack_configs:
+      - channel: '#alerts-critical'
+        title: '🚨 CRITICAL: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}\nSeverity: {{ .CommonLabels.severity }}\nCluster: {{ .CommonLabels.cluster }}'
+
+  - name: 'devops-slack-channel'
+    slack_configs:
+      - channel: '#devops-monitoring'
+        title: '⚠️ WARNING: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}\nAction: Please check metrics dashboard'
+
+  - name: 'k8s-admin-team'
+    email_configs:
+      - to: 'k8s-leads@devops.internal'
+        send_resolved: true

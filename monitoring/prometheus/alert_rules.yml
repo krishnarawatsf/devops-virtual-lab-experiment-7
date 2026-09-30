@@ -1,0 +1,62 @@
+groups:
+  - name: k8s-alerts
+    rules:
+      - alert: PodCrashLoop
+        expr: kube_pod_container_status_restarts_total > 3
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+          layer: kubernetes
+        annotations:
+          summary: "Pod is in CrashLoopBackOff state (instance {{ $labels.instance }})"
+          description: "Pod {{ $labels.pod_name }} has restarted more than 3 times in the last 5 minutes. Immediate investigation required."
+          runbook_url: "https://wiki.devops.internal/runbooks/k8s-pod-crashloop"
+
+      - alert: HighCPUUsage
+        expr: pod_cpu_usage_percent > 85
+        for: 1m
+        labels:
+          severity: warning
+          team: platform
+          layer: infrastructure
+        annotations:
+          summary: "High CPU utilization detected on {{ $labels.pod_name }}"
+          description: "CPU utilization has exceeded 85% (current: {{ $value }}%). Consider checking HPA or scaling deployment replicas."
+          runbook_url: "https://wiki.devops.internal/runbooks/high-cpu"
+
+      - alert: NodeDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+          layer: aws-infra
+        annotations:
+          summary: "Target instance is unreachable: {{ $labels.instance }}"
+          description: "Scrape job {{ $labels.job }} target has been down for over 1 minute. Cloud infrastructure node may be unresponsive."
+          runbook_url: "https://wiki.devops.internal/runbooks/node-down"
+
+      - alert: HighHttpErrorRate
+        expr: rate(http_requests_total{status_code=~"5.."}[2m]) / rate(http_requests_total[2m]) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+          layer: application
+        annotations:
+          summary: "High HTTP 5xx error rate on {{ $labels.route }}"
+          description: "5xx server error rate is {{ $value }}%, exceeding the 5% error budget threshold."
+          runbook_url: "https://wiki.devops.internal/runbooks/http-5xx-spike"
+
+      - alert: HighServiceLatency
+        expr: http_request_duration_seconds{quantile="0.95"} > 1.0
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+          layer: application
+        annotations:
+          summary: "P95 response latency exceeded 1000ms"
+          description: "95th percentile latency is currently {{ $value }}s on endpoint {{ $labels.route }}."
+          runbook_url: "https://wiki.devops.internal/runbooks/high-latency"
