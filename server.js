@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 const { app, register, chaosState } = require('./src/app');
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 
 // Serve static frontend assets
 app.use(express.static(path.join(__dirname, 'public')));
